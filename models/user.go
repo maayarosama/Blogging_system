@@ -1,33 +1,48 @@
 package models
 
 import (
+	"time"
+
+	"github.com/google/uuid"
 	"github.com/maayarosama/Blogging_system/utils"
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB
-
 type User struct {
 	gorm.Model
-
-	// Doesn't override the ID key in gorm model
-	ID int `json:"id" gorm:"primaryKey" column:"id"`
-
-	// ID               uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key"`
-	Username       string `json:"username"`
-	Email          string `json:"email"`
-	Password       string `json:"password"`
-	HashedPassword string `json:"hashed_password" binding:"required"`
-
-	Quote string `json:"quote"`
+	ID               uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
+	Name             string    `gorm:"type:varchar(255);not null"`
+	Email            string    `gorm:"uniqueIndex;not null"`
+	Password         string    `gorm:"not null"`
+	Quote            string    `gorm:"type:varchar(255);not null"`
+	VerificationCode int
+	Verified         bool      `gorm:"not null"`
+	CreatedAt        time.Time `gorm:"not null"`
+	UpdatedAt        time.Time `gorm:"not null"`
 }
+
+// type User struct {
+// 	gorm.Model
+
+// 	// Doesn't override the ID key in gorm model
+// 	ID int `json:"id" gorm:"primaryKey" column:"id"`
+
+// 	// ID               uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key"`
+// 	Username string `json:"username"`
+// 	Email    string `json:"email"`
+// 	Password string `json:"password"`
+// 	// HashedPassword string `json:"hashed_password" binding:"required"`
+
+//		Quote string `json:"quote"`
+//	}
 type SignInInput struct {
 	Email    string `json:"email"  binding:"required"`
 	Password string `json:"password"  binding:"required"`
 }
 
 func (d *DB) SignUp(user *User) *User {
-	user.HashedPassword, _ = utils.HashPassword(user.Password)
+	user.ID, _ = uuid.NewUUID()
+	user.Password, _ = utils.HashPassword(user.Password)
 	d.db.Create(&user)
 	return user
 }
@@ -37,16 +52,12 @@ func (d *DB) GetUsers() []User {
 	d.db.Find(&Users)
 	return Users
 }
-func (d *DB) GetUserByEmail(email string) (*User, error) {
-	// Something is wrong here
-	var getUserByEmail User
-	db := d.db.Where("email=?", email).Find(&getUserByEmail)
-	print(db.Error)
-	if d.db.Error == nil {
-		print("db.Error")
-	}
 
-	return &getUserByEmail, d.db.Error
+func (d *DB) GetUserByEmail(email string) (*User, error) {
+	var u User
+	res := d.db.First(&u, "email = ?", email)
+	println(res)
+	return &u, res.Error
 }
 
 // GetUserByid

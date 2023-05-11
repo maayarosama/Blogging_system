@@ -21,16 +21,32 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	// Validations for unique username and email need to be added
 
 	createUser := &models.User{}
-
-	println(createUser)
-
 	utils.ParseBody(r, createUser)
+
+	_, err := c.db.GetUserByEmail(createUser.Email)
+	if err == nil {
+		log.Error().Err(err).Send()
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("User Already exists \n"))
+		return
+	}
+
+	code := utils.GenerateRandomCode()
+	message := utils.SignUpMailBody(code, c.mailSender.Timeout)
+
+	err = utils.SendMail(c.mailSender.Email, c.mailSender.Password, createUser.Email, message)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return
+	}
+	createUser.VerificationCode = code
 
 	u := c.db.SignUp(createUser)
 	res, _ := json.Marshal(u)
-
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
+	w.Write([]byte("Verification code has been sent to your email \n"))
 
 }
 
@@ -47,8 +63,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userDetails, err := c.db.GetUserByEmail(input.Email)
-	println(err)
-	// Doesn't return when error isn't nil, still needs work
+
 	if err != nil {
 		log.Error().Err(err).Send()
 

@@ -8,8 +8,22 @@ import (
 )
 
 type Configuration struct {
-	Server   Server `json:"server"`
-	Database DB     `json:"database"`
+	Server     Server     `json:"server"`
+	Database   DB         `json:"database"`
+	Token      JwtToken   `json:"token"`
+	MailSender MailSender `json:"mailSender"`
+}
+
+type MailSender struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Timeout  int    `json:"timeout"`
+}
+
+// JWT Authentation token data
+type JwtToken struct {
+	Secret  string `json:"secret"`
+	Timeout int    `json:"timeout"`
 }
 
 // Server struct to hold server's information
@@ -52,6 +66,13 @@ func ParseConfigFile(conf []byte) (Configuration, error) {
 
 	if myConfig.Database.File == "" {
 		return myConfig, errors.New("database file is required")
+	}
+	if myConfig.Token.Secret == "" || myConfig.Token.Timeout == 0 {
+		return myConfig, errors.New("jwt token configuration is required")
+	}
+
+	if myConfig.MailSender.Email == "" || myConfig.MailSender.Password == "" || myConfig.MailSender.Timeout == 0 {
+		return myConfig, errors.New("mail sender configuration is required")
 	}
 
 	return myConfig, nil

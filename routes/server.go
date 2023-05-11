@@ -44,7 +44,8 @@ func NewServer(file string) (server *Server, err error) {
 	if err != nil {
 		return
 	}
-	controller := controllers.NewController(db)
+
+	controller := controllers.NewController(db, configuration.MailSender)
 	r := mux.NewRouter()
 	RegisterUserStoreRoutes(r, controller)
 	// RegisterBlogStoreRoutes(r, controller)

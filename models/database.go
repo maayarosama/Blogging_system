@@ -26,7 +26,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Blog{})
+	err := d.db.AutoMigrate(&User{})
 	if err != nil {
 		return err
 	}
