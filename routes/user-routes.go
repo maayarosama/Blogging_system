@@ -9,5 +9,6 @@ var RegisterUserStoreRoutes = func(router *mux.Router, c *controllers.Controller
 	router.HandleFunc("/user", c.GetUsers).Methods("GET")
 	router.HandleFunc("/user/signup", c.SignUp).Methods("POST")
 	router.HandleFunc("/user/signin", c.SignIn).Methods("POST")
+	router.HandleFunc("/user/verifyemail", c.VerifyEmail).Methods("POST")
 
 }

@@ -12,7 +12,7 @@ func SendMail(sender string, password string, receiver string, message string) e
 	auth := smtp.PlainAuth("", sender, password, "smtp.gmail.com")
 
 	err := smtp.SendMail("smtp.gmail.com:587", auth, sender, []string{receiver}, []byte(message))
-	fmt.Printf("%+v\n", err)
+	// fmt.Printf("%+v\n", err)
 
 	return err
 }

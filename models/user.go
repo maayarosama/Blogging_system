@@ -40,6 +40,11 @@ type SignInInput struct {
 	Password string `json:"password"  binding:"required"`
 }
 
+type VerifyUserInput struct {
+	Email string `json:"email"  binding:"required"`
+	Code  int    `json:"code"  binding:"required"`
+}
+
 func (d *DB) SignUp(user *User) *User {
 	user.ID, _ = uuid.NewUUID()
 	user.Password, _ = utils.HashPassword(user.Password)
@@ -58,6 +63,14 @@ func (d *DB) GetUserByEmail(email string) (*User, error) {
 	res := d.db.First(&u, "email = ?", email)
 	println(res)
 	return &u, res.Error
+}
+func (d *DB) UpdateUser(user *User) error {
+	query := d.db.Model(&User{}).Where("ID = ?", user.ID).Updates(user)
+	return query.Error
+}
+func (d *DB) UpdateUserVerfied(user *User) error {
+	query := d.db.Model(&User{}).Where("ID = ?", user.ID).Update("verified", user.Verified)
+	return query.Error
 }
 
 // GetUserByid
