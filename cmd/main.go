@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-
 	configPath := flag.String("configPath", "../config.json", "config file path")
 	flag.Parse()
 	// Initialize new server
