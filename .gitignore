@@ -1,2 +1,2 @@
-*.json
+config.json
 cmd/test.db
