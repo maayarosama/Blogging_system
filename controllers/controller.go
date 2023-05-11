@@ -8,8 +8,9 @@ import (
 type Controller struct {
 	db         models.DB
 	mailSender config.MailSender
+	jwt        config.JwtToken
 }
 
-func NewController(db models.DB, mailSender config.MailSender) *Controller {
-	return &Controller{db, mailSender}
+func NewController(db models.DB, mailSender config.MailSender, jwt config.JwtToken) *Controller {
+	return &Controller{db, mailSender, jwt}
 }

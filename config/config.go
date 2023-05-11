@@ -34,7 +34,7 @@ type Server struct {
 
 // DB struct to hold database's file path
 type DB struct {
-	File string `json:"file"`
+	Path string `json:"file"`
 }
 
 // Read config file to bytes
@@ -64,7 +64,7 @@ func ParseConfigFile(conf []byte) (Configuration, error) {
 		return myConfig, errors.New("server host and port are required")
 	}
 
-	if myConfig.Database.File == "" {
+	if myConfig.Database.Path == "" {
 		return myConfig, errors.New("database file is required")
 	}
 	if myConfig.Token.Secret == "" || myConfig.Token.Timeout == 0 {

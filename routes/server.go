@@ -36,7 +36,7 @@ func NewServer(file string) (server *Server, err error) {
 	}
 
 	db := models.NewDB()
-	err = db.Connect(configuration.Database.File)
+	err = db.Connect(configuration.Database.Path)
 	if err != nil {
 		return
 	}
@@ -45,7 +45,7 @@ func NewServer(file string) (server *Server, err error) {
 		return
 	}
 
-	controller := controllers.NewController(db, configuration.MailSender)
+	controller := controllers.NewController(db, configuration.MailSender, configuration.Token)
 	r := mux.NewRouter()
 	RegisterUserStoreRoutes(r, controller)
 	// RegisterBlogStoreRoutes(r, controller)

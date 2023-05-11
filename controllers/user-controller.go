@@ -18,9 +18,15 @@ func (c *Controller) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	verifyData := &models.VerifyUserInput{}
 
+	type VerifyUserInput struct {
+		Email string `json:"email"  binding:"required"`
+		Code  int    `json:"code"  binding:"required"`
+	}
+
+	verifyData := &VerifyUserInput{}
 	utils.ParseBody(r, verifyData)
+
 	user, EmailErr := c.db.GetUserByEmail(verifyData.Email)
 
 	if EmailErr != nil {
@@ -59,7 +65,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	createUser := &models.User{}
 	utils.ParseBody(r, createUser)
-
+	println(createUser.Email)
 	// Check if user exists and verified
 	user, EmailErr := c.db.GetUserByEmail(createUser.Email)
 	if EmailErr == nil && user.Verified {
@@ -69,6 +75,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("User Already exists \n"))
 		return
 	}
+	print("FFfff")
 
 	// Generate verfication code and set it to the created user
 	code := utils.GenerateRandomCode()
@@ -80,6 +87,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	createUser.VerificationCode = code
+	println(createUser.VerificationCode)
 
 	// Check if user exists but not verified if so update the user's info
 	if EmailErr == nil && !user.Verified {
@@ -95,7 +103,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	// check if user doesn't exist if so create new user
 	if EmailErr != nil {
-		u := c.db.SignUp(createUser)
+		u := c.db.CreateUser(createUser)
 		res, _ := json.Marshal(u)
 		w.WriteHeader(http.StatusOK)
 		w.Write(res)
@@ -106,15 +114,15 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	//Ignore this needs a lot of modification
-
-	var input models.SignInInput
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		log.Error().Err(err).Send()
-
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	type SignInInput struct {
+		Email    string `json:"email"  binding:"required"`
+		Password string `json:"password"  binding:"required"`
 	}
+
+	input := &SignInInput{}
+	utils.ParseBody(r, input)
+	println(input.Email)
+	println(input.Password)
 
 	userDetails, err := c.db.GetUserByEmail(input.Email)
 
@@ -122,14 +130,35 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		log.Error().Err(err).Send()
 
 		w.WriteHeader(http.StatusBadRequest)
-		println("No user found")
+		w.Write([]byte("no user found\n"))
 		return
 	}
 
+	if err == nil && !userDetails.Verified {
+		log.Error().Err(err).Send()
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("user isn't verified\n"))
+
+		return
+	}
+
+	compare := utils.VerifyPassword(userDetails.Password, input.Password)
+	if compare != nil {
+		log.Error().Err(err).Send()
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("couldn't sign in\n"))
+		return
+	}
+	w.Write([]byte("Signed in successfully \n"))
+
 	res, _ := json.Marshal(userDetails)
+	// token, err := models.GenerateToken(userDetails.ID.String(), userDetails.Email, c.jwt.Secret, c.jwt.Timeout)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
+	// w.Write(map[string]string{"access_token": token})
+	// w.Write(res, map[string]string{"access_token": token})
 
 }

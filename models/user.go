@@ -35,17 +35,8 @@ type User struct {
 
 //		Quote string `json:"quote"`
 //	}
-type SignInInput struct {
-	Email    string `json:"email"  binding:"required"`
-	Password string `json:"password"  binding:"required"`
-}
 
-type VerifyUserInput struct {
-	Email string `json:"email"  binding:"required"`
-	Code  int    `json:"code"  binding:"required"`
-}
-
-func (d *DB) SignUp(user *User) *User {
+func (d *DB) CreateUser(user *User) *User {
 	user.ID, _ = uuid.NewUUID()
 	user.Password, _ = utils.HashPassword(user.Password)
 	d.db.Create(&user)

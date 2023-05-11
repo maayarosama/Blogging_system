@@ -1,0 +1,33 @@
+package models
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+)
+
+type Claims struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	jwt.RegisteredClaims
+}
+
+func GenerateToken(user_id string, email string, jwtKey string, timeout int) (string, error) {
+	expirationTime := time.Now().Add(time.Duration(timeout) * time.Minute)
+	claims := &Claims{
+		UserID: user_id,
+		Email:  email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			// In JWT, the expiry time is expressed as unix milliseconds
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString([]byte(jwtKey))
+	if err != nil {
+		return "", fmt.Errorf("generating JWT Token failed: %w", err)
+	}
+	return tokenString, nil
+}

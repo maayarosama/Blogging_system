@@ -4,8 +4,22 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
+	// "github.com/maayarosama/Blogging_system/models"
 )
+
+// func GenerateToken(user_id string, email string, JWTKey string, timeout int) {
+// 	expirationTime := time.Now().Add(time.Duration(timeout) * time.Minute)
+// 	claims := &models.Claims{
+// 		UserID: user_id,
+// 		Email:  email,
+// 		RegisteredClaims: jwt.RegisteredClaims{
+// 			// In JWT, the expiry time is expressed as unix milliseconds
+// 			ExpiresAt: jwt.NewNumericDate(expirationTime),
+// 		},
+// 	}
+
+// }
 
 func GenerateToken(ttl time.Duration, payload interface{}, secretJWTKey string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
@@ -14,11 +28,11 @@ func GenerateToken(ttl time.Duration, payload interface{}, secretJWTKey string) 
 	claims := token.Claims.(jwt.MapClaims)
 
 	claims["sub"] = payload
-	claims["exp"] = now.Add(ttl).Unix()
+	claims["exp"] = now.Add(ttl).Unix() // expiration
 	claims["iat"] = now.Unix()
 	claims["nbf"] = now.Unix()
 
-	tokenString, err := token.SignedString([]byte(secretJWTKey))
+	tokenString, err := token.SignedString([]byte(secretJWTKey)) // signing token with secret in conf file
 
 	if err != nil {
 		return "", fmt.Errorf("generating JWT Token failed: %w", err)
