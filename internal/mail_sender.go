@@ -1,11 +1,9 @@
-package utils
+package internal
 
 import (
 	"fmt"
-	"math/rand"
 	"net/smtp"
 	"strconv"
-	"time"
 )
 
 func SendMail(sender string, password string, receiver string, message string) error {
@@ -23,11 +21,4 @@ func SignUpMailBody(code int, timeout int) string {
 	message := subject + body
 
 	return message
-}
-
-func GenerateRandomCode() int {
-	min := 1000
-	max := 9999
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(max-min) + min
 }

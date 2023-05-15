@@ -3,21 +3,15 @@ package main
 import (
 	"flag"
 
+	"github.com/maayarosama/Blogging_system/app"
 	"github.com/rs/zerolog/log"
-
-	"github.com/maayarosama/Blogging_system/routes"
 )
 
 func main() {
 	configPath := flag.String("configPath", "../config.json", "config file path")
 	flag.Parse()
-	// Initialize new server
-	server, err := routes.NewServer(*configPath)
-	if err != nil {
-		log.Fatal().Err(err).Send()
-	}
-	// start server
-	err = server.Start()
+	a, err := app.NewApp(*configPath)
+	err = a.ListenAndServe()
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}

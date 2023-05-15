@@ -3,8 +3,9 @@ package models
 import (
 	"time"
 
+	"github.com/maayarosama/Blogging_system/internal"
+
 	"github.com/google/uuid"
-	"github.com/maayarosama/Blogging_system/utils"
 	"gorm.io/gorm"
 )
 
@@ -21,24 +22,9 @@ type User struct {
 	UpdatedAt        time.Time `gorm:"not null"`
 }
 
-// type User struct {
-// 	gorm.Model
-
-// 	// Doesn't override the ID key in gorm model
-// 	ID int `json:"id" gorm:"primaryKey" column:"id"`
-
-// 	// ID               uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primary_key"`
-// 	Username string `json:"username"`
-// 	Email    string `json:"email"`
-// 	Password string `json:"password"`
-// 	// HashedPassword string `json:"hashed_password" binding:"required"`
-
-//		Quote string `json:"quote"`
-//	}
-
 func (d *DB) CreateUser(user *User) *User {
 	user.ID, _ = uuid.NewUUID()
-	user.Password, _ = utils.HashPassword(user.Password)
+	user.Password, _ = internal.HashPassword(user.Password)
 	d.db.Create(&user)
 	return user
 }
@@ -52,7 +38,6 @@ func (d *DB) GetUsers() []User {
 func (d *DB) GetUserByEmail(email string) (*User, error) {
 	var u User
 	res := d.db.First(&u, "email = ?", email)
-	println(res)
 	return &u, res.Error
 }
 func (d *DB) UpdateUser(user *User) error {

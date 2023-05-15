@@ -1,5 +1,5 @@
 // Ignore this file for now as it needs a lot of modifications
-package controllers
+package app
 
 // import (
 // 	"encoding/json"

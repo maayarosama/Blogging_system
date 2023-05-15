@@ -1,5 +1,4 @@
-// Package routes for API endpoints
-package routes
+package app
 
 import (
 	"context"
@@ -10,11 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/maayarosama/Blogging_system/config"
-	"github.com/maayarosama/Blogging_system/controllers"
-	"github.com/maayarosama/Blogging_system/models"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -24,34 +18,9 @@ type Server struct {
 	port string
 }
 
-// Initialize the server and db
-func NewServer(file string) (server *Server, err error) {
-	f, err := config.ReadConfigFile(file)
-	if err != nil {
-		return
-	}
-	configuration, err := config.ParseConfigFile(f)
-	if err != nil {
-		return
-	}
-
-	db := models.NewDB()
-	err = db.Connect(configuration.Database.Path)
-	if err != nil {
-		return
-	}
-	err = db.Migrate()
-	if err != nil {
-		return
-	}
-
-	controller := controllers.NewController(db, configuration.MailSender, configuration.Token)
-	r := mux.NewRouter()
-	RegisterUserStoreRoutes(r, controller)
-	// RegisterBlogStoreRoutes(r, controller)
-	http.Handle("/", r)
-
-	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
+// Initialize the server
+func NewServer(port string, host string) (server *Server, err error) {
+	return &Server{port: port, host: host}, nil
 }
 
 // start the server and gracefull shutdown
