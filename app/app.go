@@ -70,14 +70,23 @@ func (a *App) ListenAndServe() error {
 
 // Registering all routes
 func (a *App) RegisterHandlers() {
-	a.router.HandleFunc("/user", a.GetUsers).Methods("GET")
-	a.router.HandleFunc("/user/signup", a.SignUp).Methods("POST")
-	a.router.HandleFunc("/user/signin", a.SignIn).Methods("POST")
-	a.router.HandleFunc("/user/verifyemail", a.VerifyEmail).Methods("POST")
 
-	// a.router.HandleFunc("/blog/", a.CreateBlog).Methods("POST")
-	// a.router.HandleFunc("/blog/", a.GetBlogs).Methods("GET")
-	// a.router.HandleFunc("/blog/{BlogId}", a.GetBlogById).Methods("GET")
+	//User routes
+	users := a.router.HandleFunc("/user", a.GetUsers).Methods("GET")
+	signup := a.router.HandleFunc("/user/signup", a.SignUp).Methods("POST")
+	signin := a.router.HandleFunc("/user/signin", a.SignIn).Methods("POST")
+	verifyemail := a.router.HandleFunc("/user/verifyemail", a.VerifyEmail).Methods("POST")
+
+	//Blog routes
+	a.router.HandleFunc("/blogs", a.GetBlogs).Methods("GET")
+	a.router.HandleFunc("/user/blogs", a.GetUsersBlogs).Methods("GET")
+	a.router.HandleFunc("/blog", a.CreateBlog).Methods("POST")
+	a.router.HandleFunc("/blog/{BlogId}", a.GetBlogByID).Methods("GET")
+	a.router.HandleFunc("/blog/{BlogId}", a.DeleteBlog).Methods("DELETE")
+
+	//Authenticate
+	excludedRoutes := []*mux.Route{users, signup, signin, verifyemail}
+	a.router.Use(internal.Authentication(excludedRoutes, a.config.Token.Secret, a.config.Token.Timeout))
+
 	// a.router.HandleFunc("/blog/{BlogId}", a.UpdateBlog).Methods("PUT")
-	// a.router.HandleFunc("/blog/{BlogId}", a.DeleteBlog).Methods("DELETE")
 }

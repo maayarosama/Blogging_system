@@ -1,81 +1,134 @@
-// Ignore this file for now as it needs a lot of modifications
 package app
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// 	"net/http"
-// 	"strconv"
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
 
-// 	"github.com/gorilla/mux"
-// 	"github.com/maayarosama/Blogging_system/models"
-// 	"github.com/maayarosama/Blogging_system/utils"
-// )
+	"github.com/gorilla/mux"
+	"github.com/maayarosama/Blogging_system/internal"
+	"github.com/maayarosama/Blogging_system/models"
+	"github.com/rs/zerolog/log"
+)
 
-// // var newBlog models.Blog
+func (a *App) GetBlogs(w http.ResponseWriter, r *http.Request) {
+	blogs := a.db.GetBlogs()
+	res, _ := json.Marshal(blogs)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+func (a *App) GetUsersBlogs(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(internal.UserIDKey("UserID")).(int)
+	blogs := a.db.GetUsersBlogs(userID)
+	res, _ := json.Marshal(blogs)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
 
-// func GetBlogs(w http.ResponseWriter, r *http.Request) {
+func (a *App) GetBlogByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	blogId := vars["BlogId"]
+	ID, err := strconv.Atoi(blogId)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 
-// 	// blogs:= models.GetBlogs()
-// 	newBlogs := models.GetBlogs()
-// 	res, _ := json.Marshal(newBlogs)
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write(res)
-// }
+		log.Printf("error: %v", err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	blogDetails, _ := a.db.GetBlogByID(ID)
+	res, _ := json.Marshal(blogDetails)
 
-// func GetBlogById(w http.ResponseWriter, r *http.Request) {
-// 	vars := mux.Vars(r)
-// 	blogId := vars["blog_id"]
-// 	ID, err := strconv.ParseInt(blogId, 0, 0)
-// 	if err != nil {
-// 		fmt.Println("error parsing blog")
-// 	}
-// 	blogDetails, _ := models.GetBlogById(ID)
-// 	res, _ := json.Marshal(blogDetails)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write(res)
+}
 
-// }
+func (a *App) CreateBlog(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(internal.UserIDKey("UserID")).(int)
+	createBlog := &models.Blog{}
+	ParseBody(r, createBlog)
+	createBlog.Userid = int(userID)
 
-// func CreateBlog(w http.ResponseWriter, r *http.Request) {
-// 	createBlog := &models.Blog{}
-// 	utils.ParseBody(r, createBlog)
-// 	b := createBlog.CreateBlog()
-// 	res, _ := json.Marshal(b)
+	b := a.db.CreateBlog(createBlog)
+	res, _ := json.Marshal(b)
 
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write(res)
-// }
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
 
-// func DeleteBlog(w http.ResponseWriter, r *http.Request) {
-// 	vars := mux.Vars(r)
-// 	blogId := vars["blog_id"]
-// 	ID, err := strconv.ParseInt(blogId, 0, 0)
-// 	if err != nil {
-// 		fmt.Println("error parsing blog")
-// 	}
+func (a *App) DeleteBlog(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	blogId := vars["BlogId"]
+	ID, err := strconv.Atoi(blogId)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 
-// 	blog := models.DeleteBlog(ID)
-// 	res, _ := json.Marshal(blog)
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write(res)
+		log.Printf("error: %v", err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	deleteBlog, err := a.db.GetBlogByID(ID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
 
-// }
+		log.Printf("error: %v", err)
+		w.Write([]byte(err.Error()))
 
-// // func UpdateBlog(w http.ResponseWriter, r *http.Request) {
-// // 	var updateBlog = &models.Blog{}
-// // 	utils.ParseBody(r, updateBlog)
-// // 	vars := mux.Vars(r)
-// // 	blogId := vars["blog_id"]
-// // 	ID, err := strconv.ParseInt(blogId, 0, 0)
-// // 	if err != nil {
-// // 		fmt.Println("error parsing blog")
-// // 	}
-// // 	blogDetails , db := models.GetBlogById(ID)
-// // 	if
+		return
+	}
+	ParseBody(r, deleteBlog)
 
-// // }
+	err = a.db.DeleteBlog(deleteBlog)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		log.Printf("error: %v", err)
+		w.Write([]byte(err.Error()))
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("User deleted successfully \n"))
+
+}
+
+func (a *App) UpdateBlog(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	blogId := vars["BlogId"]
+	ID, err := strconv.Atoi(blogId)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("error: %v", err)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	deleteBlog, err := a.db.GetBlogByID(ID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		log.Printf("error: %v", err)
+		w.Write([]byte(err.Error()))
+
+		return
+	}
+	ParseBody(r, deleteBlog)
+
+	err = a.db.DeleteBlog(deleteBlog)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("failed Deletation: %v", err)
+		w.Write([]byte(err.Error()))
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("User deleted successfully \n"))
+
+}

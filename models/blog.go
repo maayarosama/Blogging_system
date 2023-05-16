@@ -1,38 +1,45 @@
-// Ignore this file for now as it needs a lot of modifications
 package models
 
-// import (
-// 	"gorm.io/gorm"
-// )
+import (
+	"time"
 
-// type Blog struct {
-// 	gorm.Model
-// 	ID      int    `json:"id" gorm:"primaryKey"`
-// 	UserID  int    `json:"user_id"`
-// 	Title   string `json:"title"`
-// 	Content string `json:"content"`
-// }
+	"gorm.io/gorm"
+)
 
-// func (blog *Blog) CreateBlog() *Blog {
-// 	// db.NewRecord(user)
-// 	db.Create(&blog)
-// 	return blog
-// }
+type Blog struct {
+	gorm.Model
+	ID        int       `gorm:"primary_key; unique; AUTO_INCREMENT; column:id"`
+	Userid    int       `gorm:"not null"`
+	Title     string    `gorm:"not null"`
+	Content   string    `gorm:"not null"`
+	CreatedAt time.Time `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null"`
+}
 
-// func GetBlogs() []Blog {
-// 	var Blogs []Blog
-// 	db.Find(&Blogs)
-// 	return Blogs
-// }
+func (d *DB) GetBlogs() []Blog {
+	var Blogs []Blog
+	d.db.Find(&Blogs)
+	return Blogs
+}
 
-// func GetBlogById(id int64) (*Blog, *gorm.DB) {
-// 	var getBlog Blog
-// 	db := db.Where("blogId=?", id).Find(&getBlog)
-// 	return &getBlog, db
-// }
+func (d *DB) GetUsersBlogs(id int) []Blog {
+	var Blogs []Blog
 
-// func DeleteBlog(id int64) Blog {
-// 	var blog Blog
-// 	db.Where("blogId=?", id).Delete(blog)
-// 	return blog
-// }
+	d.db.Where("userid = ?", id).Find(&Blogs)
+	return Blogs
+}
+func (d *DB) CreateBlog(b *Blog) *Blog {
+	d.db.Create(&b)
+	return b
+}
+
+func (d *DB) GetBlogByID(id int) (*Blog, error) {
+	var b Blog
+	res := d.db.First(&b, "id = ?", id)
+	return &b, res.Error
+}
+
+func (d *DB) DeleteBlog(b *Blog) error {
+	query := d.db.Where("id=?", b.ID).Delete(b)
+	return query.Error
+}

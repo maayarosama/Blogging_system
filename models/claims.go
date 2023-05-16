@@ -8,12 +8,12 @@ import (
 )
 
 type Claims struct {
-	UserID string `json:"user_id"`
+	UserID int    `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(user_id string, email string, jwtKey string, timeout int) (string, error) {
+func GenerateToken(user_id int, email string, jwtKey string, timeout int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(timeout) * time.Minute)
 	claims := &Claims{
 		UserID: user_id,
@@ -30,4 +30,23 @@ func GenerateToken(user_id string, email string, jwtKey string, timeout int) (st
 		return "", fmt.Errorf("generating JWT Token failed: %w", err)
 	}
 	return tokenString, nil
+}
+
+func ValidateToken(token, secret string, timeout int) (Claims, error) {
+	claims := &Claims{}
+	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return Claims{}, err
+	}
+	if !tkn.Valid {
+		return Claims{}, fmt.Errorf("token '%s' is invalid", token)
+	}
+
+	if time.Until(claims.ExpiresAt.Time) > time.Duration(timeout)*time.Minute {
+		return Claims{}, fmt.Errorf("token '%s' is expired", token)
+	}
+
+	return *claims, nil
 }

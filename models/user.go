@@ -3,19 +3,16 @@ package models
 import (
 	"time"
 
-	"github.com/maayarosama/Blogging_system/internal"
-
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-	ID               uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
-	Name             string    `gorm:"type:varchar(255);not null"`
-	Email            string    `gorm:"uniqueIndex;not null"`
-	Password         string    `gorm:"not null"`
-	Quote            string    `gorm:"type:varchar(255);not null"`
+	ID               int    `gorm:"primary_key; unique; AUTO_INCREMENT; column:id"`
+	Name             string `gorm:"type:varchar(255);not null"`
+	Email            string `gorm:"uniqueIndex;not null"`
+	Password         string `gorm:"type:varchar(255);not null"`
+	Quote            string `gorm:"type:varchar(255);not null"`
 	VerificationCode int
 	Verified         bool      `gorm:"not null"`
 	CreatedAt        time.Time `gorm:"not null"`
@@ -23,8 +20,6 @@ type User struct {
 }
 
 func (d *DB) CreateUser(user *User) *User {
-	user.ID, _ = uuid.NewUUID()
-	user.Password, _ = internal.HashPassword(user.Password)
 	d.db.Create(&user)
 	return user
 }
