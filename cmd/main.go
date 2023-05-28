@@ -10,8 +10,12 @@ import (
 func main() {
 	configPath := flag.String("configPath", "../config.json", "config file path")
 	flag.Parse()
-	a, err := app.NewApp(*configPath)
-	err = a.ListenAndServe()
+	a, _ := app.NewApp(*configPath)
+	db, _ := a.InitiateDB(a.Config.Database.Path)
+
+	a.DB = db
+
+	err := a.ListenAndServe()
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
