@@ -15,8 +15,8 @@ import (
 type App struct {
 	server *Server
 	router *mux.Router
-	config internal.Configuration
-	db     models.DB
+	Config internal.Configuration
+	DB     models.DB
 
 	// logger Logger
 }
@@ -33,26 +33,23 @@ func NewApp(path string) (a *App, err error) {
 		return
 	}
 
-	db := models.NewDB()
-	err = db.Connect(config.Database.Path)
-	if err != nil {
-		return
-	}
-	err = db.Migrate()
-	if err != nil {
-		return
-	}
+	// db := models.NewDB()
+	// err = db.Connect(config.Database.Path)
+	// if err != nil {
+	// 	return
+	// }
+	// err = db.Migrate()
+	// if err != nil {
+	// 	return
+	// }
 
 	//Initiate the app instance with data read from config.json
 	a = &App{
 		server: &Server{},
 		router: mux.NewRouter(),
-		config: config,
-		db:     db,
+		Config: config,
+		DB:     models.DB{},
 	}
-
-	a.RegisterHandlers()
-	http.Handle("/", a.router)
 
 	server, err := NewServer(config.Server.Port, config.Server.Host)
 	if err != nil {
@@ -64,12 +61,45 @@ func NewApp(path string) (a *App, err error) {
 }
 
 // Starts the server initiated in the app
+// func (a *App) InitiateDB() error {
+// 	a.db = models.NewDB()
+// 	err := a.db.Connect(a.config.Database.Path)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = a.db.Migrate()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
+// Starts the server initiated in the app
 func (a *App) ListenAndServe() error {
+	a.RegisterHandlers()
+	http.Handle("/", a.router)
 	return a.server.Start()
+}
+
+func (a *App) InitiateDB(dbPath string) (db models.DB, err error) {
+
+	db = models.NewDB()
+	err = db.Connect(dbPath)
+	if err != nil {
+		return db, err
+	}
+	err = db.Migrate()
+	if err != nil {
+		return db, err
+	}
+
+	return db, nil
 }
 
 // Registering all routes
 func (a *App) RegisterHandlers() {
+
+	a.router.Use(internal.EnableCors)
 
 	//User routes
 	users := a.router.HandleFunc("/user", a.GetUsers).Methods("GET")
@@ -86,7 +116,11 @@ func (a *App) RegisterHandlers() {
 
 	//Authenticate
 	excludedRoutes := []*mux.Route{users, signup, signin, verifyemail}
-	a.router.Use(internal.Authentication(excludedRoutes, a.config.Token.Secret, a.config.Token.Timeout))
+	a.router.Use(internal.Authentication(excludedRoutes, a.Config.Token.Secret, a.Config.Token.Timeout))
 
 	// a.router.HandleFunc("/blog/{BlogId}", a.UpdateBlog).Methods("PUT")
 }
+
+// func enableCors(w *http.ResponseWriter) {
+// 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+// }

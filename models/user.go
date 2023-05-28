@@ -19,6 +19,15 @@ type User struct {
 	UpdatedAt        time.Time `gorm:"not null"`
 }
 
+func (d *DB) GetCodeByEmail(email string) (int, error) {
+	var res User
+	query := d.db.First(&res, "email = ?", email)
+	if query.Error != nil {
+		return 0, query.Error
+	}
+	return res.VerificationCode, nil
+}
+
 func (d *DB) CreateUser(user *User) *User {
 	d.db.Create(&user)
 	return user

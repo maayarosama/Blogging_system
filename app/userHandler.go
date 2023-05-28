@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/maayarosama/Blogging_system/internal"
@@ -10,9 +11,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Retrieve all users from db
+// Retrieve all users from DB
 func (a *App) GetUsers(w http.ResponseWriter, r *http.Request) {
-	newUsers := a.db.GetUsers()
+	newUsers := a.DB.GetUsers()
 	res, _ := json.Marshal(newUsers)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -30,7 +31,7 @@ func (a *App) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	verifyData := &VerifyUserInput{}
 	ParseBody(r, verifyData)
 
-	user, EmailErr := a.db.GetUserByEmail(verifyData.Email)
+	user, EmailErr := a.DB.GetUserByEmail(verifyData.Email)
 
 	if EmailErr != nil {
 		log.Error().Err(EmailErr).Send()
@@ -54,7 +55,7 @@ func (a *App) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	}
 	user.Verified = true
-	err := a.db.UpdateUserVerfied(user)
+	err := a.DB.UpdateUserVerfied(user)
 	if err != nil {
 		log.Error().Err(err).Send()
 		w.Write([]byte("error while verifying\n"))
@@ -72,7 +73,7 @@ func (a *App) SignUp(w http.ResponseWriter, r *http.Request) {
 	ParseBody(r, createUser)
 
 	// Check if user exists and verified
-	user, EmailErr := a.db.GetUserByEmail(createUser.Email)
+	user, EmailErr := a.DB.GetUserByEmail(createUser.Email)
 	if EmailErr == nil && user.Verified {
 		log.Error().Err(EmailErr).Send()
 
@@ -83,21 +84,21 @@ func (a *App) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	// Generate verfication code and set it to the created user
 	code := internal.GenerateRandomCode()
-	message := internal.SignUpMailBody(code, a.config.MailSender.Timeout)
+	message := internal.SignUpMailBody(code, a.Config.MailSender.Timeout)
 
-	createUser.Password, _ = internal.HashPassword(user.Password)
-
-	err := internal.SendMail(a.config.MailSender.Email, a.config.MailSender.Password, createUser.Email, message)
+	err := internal.SendMail(a.Config.MailSender.Email, a.Config.MailSender.Password, createUser.Email, message)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return
 	}
 	createUser.VerificationCode = code
+	createUser.Password, _ = internal.HashPassword(createUser.Password)
 
 	// Check if user exists but not verified if so update the user's info
 	if EmailErr == nil && !user.Verified {
 		createUser.ID = user.ID
-		err = a.db.UpdateUser(createUser)
+
+		err := a.DB.UpdateUser(createUser)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return
@@ -107,17 +108,25 @@ func (a *App) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// user doesn't exist, so create new user
-	u := a.db.CreateUser(createUser)
-	res, _ := json.Marshal(u)
+	// u := a.DB.CreateUser(createUser)
+
+	a.DB.CreateUser(createUser)
+	// res, _ := json.Marshal(u)
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	// w.Write(res)
 	w.Write([]byte("Verification code has been sent to your email \n"))
-	return
 
 }
 
 // user sign in
 func (a *App) SignIn(w http.ResponseWriter, r *http.Request) {
+	// enableCors(&w)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	fmt.Println(w.Header())
+	// sprintln(w.Header())
+
 	type SignInInput struct {
 		Email    string `json:"email"  binding:"required"`
 		Password string `json:"password"  binding:"required"`
@@ -125,7 +134,7 @@ func (a *App) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	input := &SignInInput{}
 	ParseBody(r, input)
-	userDetails, err := a.db.GetUserByEmail(input.Email)
+	userDetails, err := a.DB.GetUserByEmail(input.Email)
 
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -144,7 +153,7 @@ func (a *App) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// compare := internal.VerifyPassword(userDetails.Password, input.Password)
+	compare := internal.VerifyPassword(userDetails.Password, input.Password)
 	// fmt.Printf("%+v\n", []byte(userDetails.Password))
 	// fmt.Printf("%+v\n", []byte(input.Password))
 	// compare := bcrypt.CompareHashAndPassword([]byte(userDetails.Password), []byte(input.Password))
@@ -154,23 +163,24 @@ func (a *App) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	// fmt.Printf("Hashed input.Password %+v\n", p)
 
-	// if compare != nil {
-	// 	log.Error().Err(err).Send()
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	log.Printf("failed signin: %v", compare)
-	// 	w.Write([]byte(compare.Error()))
+	if compare != nil {
+		log.Error().Err(err).Send()
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("failed signin: %v", compare)
+		w.Write([]byte(compare.Error()))
 
-	// 	return
-	// }
+		return
+	}
 
 	// res, _ := json.Marshal(userDetails)
-	token, err := models.GenerateToken(userDetails.ID, userDetails.Email, a.config.Token.Secret, a.config.Token.Timeout)
+	token, _ := models.GenerateToken(userDetails.ID, userDetails.Email, a.Config.Token.Secret, a.Config.Token.Timeout)
 
-	data, err := json.Marshal(map[string]string{"access_token": token})
+	data, _ := json.Marshal(map[string]string{"access_token": token})
 	// r.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 	// reqToken := r.Header.Get("Authorization")
 	// splitToken := strings.Split(reqToken, "Bearer ")
-	w.Header().Set("Content-Type", "application/json")
+	log.Printf("Signed in successfully \n")
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 	w.Write([]byte("Signed in successfully \n"))
 

@@ -12,19 +12,37 @@ import (
 )
 
 func (a *App) GetBlogs(w http.ResponseWriter, r *http.Request) {
-	blogs := a.db.GetBlogs()
-	res, _ := json.Marshal(blogs)
+	blogs := a.DB.GetBlogs()
+	res, err := json.Marshal(blogs)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	_, err = w.Write(res)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return
+	}
+
 }
 func (a *App) GetUsersBlogs(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(internal.UserIDKey("UserID")).(int)
-	blogs := a.db.GetUsersBlogs(userID)
-	res, _ := json.Marshal(blogs)
+	blogs := a.DB.GetUsersBlogs(userID)
+	res, err := json.Marshal(blogs)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	_, err = w.Write(res)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return
+	}
 }
 
 func (a *App) GetBlogByID(w http.ResponseWriter, r *http.Request) {
@@ -38,12 +56,16 @@ func (a *App) GetBlogByID(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	blogDetails, _ := a.db.GetBlogByID(ID)
+	blogDetails, _ := a.DB.GetBlogByID(ID)
 	res, _ := json.Marshal(blogDetails)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	_, err = w.Write(res)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return
+	}
 
 }
 
@@ -51,13 +73,21 @@ func (a *App) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(internal.UserIDKey("UserID")).(int)
 	createBlog := &models.Blog{}
 	ParseBody(r, createBlog)
-	createBlog.Userid = int(userID)
+	createBlog.Userid = userID
 
-	b := a.db.CreateBlog(createBlog)
-	res, _ := json.Marshal(b)
+	b := a.DB.CreateBlog(createBlog)
+	res, err := json.Marshal(b)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	_, err = w.Write(res)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return
+	}
 }
 
 func (a *App) DeleteBlog(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +101,7 @@ func (a *App) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	deleteBlog, err := a.db.GetBlogByID(ID)
+	deleteBlog, err := a.DB.GetBlogByID(ID)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 
@@ -82,7 +112,7 @@ func (a *App) DeleteBlog(w http.ResponseWriter, r *http.Request) {
 	}
 	ParseBody(r, deleteBlog)
 
-	err = a.db.DeleteBlog(deleteBlog)
+	err = a.DB.DeleteBlog(deleteBlog)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
@@ -108,7 +138,7 @@ func (a *App) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	deleteBlog, err := a.db.GetBlogByID(ID)
+	deleteBlog, err := a.DB.GetBlogByID(ID)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		log.Printf("error: %v", err)
@@ -118,7 +148,7 @@ func (a *App) UpdateBlog(w http.ResponseWriter, r *http.Request) {
 	}
 	ParseBody(r, deleteBlog)
 
-	err = a.db.DeleteBlog(deleteBlog)
+	err = a.DB.DeleteBlog(deleteBlog)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("failed Deletation: %v", err)

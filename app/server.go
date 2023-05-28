@@ -36,6 +36,7 @@ func (s *Server) Start() (err error) {
 		// if err := srv.ListenAndServe(); err != nil {
 		// 	log.Fatal().Err(err).Msg("HTTP server error")
 		// }
+
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal().Err(err).Msg("HTTP server error")
 		}
